@@ -9,9 +9,11 @@ contract AgentNFT is ERC721, Ownable {
 
     constructor() ERC721("AgentFi Alpha", "AGENT") Ownable(msg.sender) {}
 
-    function mint() external {
+    // CHANGED: Accepts 'to' address, returns 'tokenId'
+    function mint(address to) external returns (uint256) {
         uint256 tokenId = nextTokenId++;
-        _safeMint(msg.sender, tokenId);
+        _safeMint(to, tokenId);
+        return tokenId;
     }
 
     function totalSupply() external view returns (uint256) {
