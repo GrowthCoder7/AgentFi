@@ -1,1 +1,27 @@
 node_modules
+# --- Python Safety ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environments (Huge folder, do not commit!) ---
+venv/
+env/
+.env
+
+# --- Environment Variables (CRITICAL) ---
+# We will soon move your keys here so they aren't in the code
+.env
+.env.local
+
+# --- IDE Settings (No one wants your VSCode settings) ---
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log
+npm-debug.log*
+
+# --- Mac/Windows System Files ---
+.DS_Store
+Thumbs.db
