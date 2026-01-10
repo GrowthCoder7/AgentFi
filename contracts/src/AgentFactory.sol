@@ -28,7 +28,7 @@ contract AgentFactory {
         // 2. Deploy the Agent Wallet via Registry
         agentWallet = registry.createAccount(
             implementation,
-            31337,           // ChainID (Anvil)
+            block.chainid,           // ChainID (Anvil)
             address(token),  // Token Contract
             tokenId,         // Token ID
             tokenId,         // Salt (using TokenID keeps it simple)

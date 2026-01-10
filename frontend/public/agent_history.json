@@ -1,0 +1,193 @@
+{
+    "trades": [
+        {
+            "id": 1,
+            "timestamp": "2026-01-09T02:55:47.249360",
+            "coin": "ETH",
+            "action": "BUY",
+            "price": 3100.5,
+            "amount": 0.5,
+            "sentiment_score": 0.85,
+            "rationale": "RSI < 30 and Twitter Sentiment Positive"
+        },
+        {
+            "id": 2,
+            "timestamp": "2026-01-09T02:57:45.796986",
+            "coin": "ETH",
+            "action": "BUY",
+            "price": 3100.5,
+            "amount": 0.5,
+            "sentiment_score": 0.85,
+            "rationale": "RSI < 30 and Twitter Sentiment Positive"
+        },
+        {
+            "id": 3,
+            "timestamp": "2026-01-09T02:57:57.134064",
+            "coin": "ETH",
+            "action": "BUY",
+            "price": 3100.5,
+            "amount": 0.5,
+            "sentiment_score": 0.85,
+            "rationale": "RSI < 30 and Twitter Sentiment Positive"
+        },
+        {
+            "id": "trade-4",
+            "timestamp": "2026-01-09T03:06:25.334691",
+            "coin": "ETH",
+            "action": "BUY",
+            "price": 3150.0,
+            "graph": {
+                "nodes": [
+                    {
+                        "id": "trade-4-0",
+                        "data": {
+                            "label": "\ud83d\udd0d Start Market Scan"
+                        },
+                        "position": {
+                            "x": 100,
+                            "y": 0
+                        },
+                        "style": {
+                            "background": "#1f2937",
+                            "color": "#fff",
+                            "border": "1px solid #374151",
+                            "borderRadius": "8px",
+                            "padding": "10px",
+                            "fontSize": "12px",
+                            "width": "200px"
+                        }
+                    },
+                    {
+                        "id": "trade-4-1",
+                        "data": {
+                            "label": "\ud83d\udcca Check RSI Indicator"
+                        },
+                        "position": {
+                            "x": 100,
+                            "y": 100
+                        },
+                        "style": {
+                            "background": "#1e40af",
+                            "color": "#fff",
+                            "border": "1px solid #374151",
+                            "borderRadius": "8px",
+                            "padding": "10px",
+                            "fontSize": "12px",
+                            "width": "200px"
+                        }
+                    },
+                    {
+                        "id": "trade-4-2",
+                        "data": {
+                            "label": "\ud83d\udc26 Analyze Twitter Sentiment"
+                        },
+                        "position": {
+                            "x": 100,
+                            "y": 200
+                        },
+                        "style": {
+                            "background": "#1e40af",
+                            "color": "#fff",
+                            "border": "1px solid #374151",
+                            "borderRadius": "8px",
+                            "padding": "10px",
+                            "fontSize": "12px",
+                            "width": "200px"
+                        }
+                    },
+                    {
+                        "id": "trade-4-3",
+                        "data": {
+                            "label": "\u26fd Check Gas Fees"
+                        },
+                        "position": {
+                            "x": 100,
+                            "y": 300
+                        },
+                        "style": {
+                            "background": "#1e40af",
+                            "color": "#fff",
+                            "border": "1px solid #374151",
+                            "borderRadius": "8px",
+                            "padding": "10px",
+                            "fontSize": "12px",
+                            "width": "200px"
+                        }
+                    },
+                    {
+                        "id": "trade-4-4",
+                        "data": {
+                            "label": "\u2705 EXECUTE BUY ORDER"
+                        },
+                        "position": {
+                            "x": 100,
+                            "y": 400
+                        },
+                        "style": {
+                            "background": "#065f46",
+                            "color": "#fff",
+                            "border": "1px solid #374151",
+                            "borderRadius": "8px",
+                            "padding": "10px",
+                            "fontSize": "12px",
+                            "width": "200px"
+                        }
+                    }
+                ],
+                "edges": [
+                    {
+                        "id": "e-trade-4-1",
+                        "source": "trade-4-0",
+                        "target": "trade-4-1",
+                        "animated": true,
+                        "style": {
+                            "stroke": "#4b5563"
+                        }
+                    },
+                    {
+                        "id": "e-trade-4-2",
+                        "source": "trade-4-1",
+                        "target": "trade-4-2",
+                        "animated": true,
+                        "style": {
+                            "stroke": "#4b5563"
+                        }
+                    },
+                    {
+                        "id": "e-trade-4-3",
+                        "source": "trade-4-2",
+                        "target": "trade-4-3",
+                        "animated": true,
+                        "style": {
+                            "stroke": "#4b5563"
+                        }
+                    },
+                    {
+                        "id": "e-trade-4-4",
+                        "source": "trade-4-3",
+                        "target": "trade-4-4",
+                        "animated": true,
+                        "style": {
+                            "stroke": "#4b5563"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "logs": [],
+    "performance": [
+        {
+            "timestamp": "2026-01-09T02:55:47.250442",
+            "total_value": 9990
+        },
+        {
+            "timestamp": "2026-01-09T02:57:45.796986",
+            "total_value": 9980
+        },
+        {
+            "timestamp": "2026-01-09T02:57:57.134064",
+            "total_value": 9970
+        }
+    ]
+}

@@ -7,6 +7,8 @@ import pandas_ta as ta
 from web3 import Web3
 from eth_account import Account
 from dotenv import load_dotenv
+from history_manager import log_trade
+import random # To simulate sentiment for now
 
 # --- CONFIGURATION ---
 load_dotenv()
@@ -121,6 +123,19 @@ def execute_trade(coin_name, w3, contract, bot_account):
         signed = w3.eth.account.sign_transaction(tx, private_key=BOT_KEY)
         tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
         print(f"✅ Trade Executed on-chain! Hash: {tx_hash.hex()}")
+
+        # SIMULATED Rationale Logic (We will connect real specific logic later)
+        rationale_text = f"RSI for {best_asset['coin']} was {best_asset['rsi']} (Oversold). Moving Average trend is Bullish."
+
+        # Log it!
+        log_trade(
+            coin=best_asset['coin'],
+            action="BUY",
+            price=best_asset['price'],
+            amount=0.1, # Mock amount
+            rationale=rationale_text,
+            sentiment_score=random.uniform(0.1, 0.9) # Placeholder for the Twitter scraper
+        )
     except Exception as e:
         print(f"❌ Trade Failed: {e}")
 
