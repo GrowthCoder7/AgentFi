@@ -9,5 +9,5 @@ export const AGENT_NFT_ADDRESS = "0x395502e7De4FEe5641761E380516e83D06c146B6";
 // (Optional) Your custom Registry, if your app needs it
 export const REGISTRY_ADDRESS = "0x813788B30079dB74adC093412868d20E9820CC7d";
 
-export const MY_AGENT_ADDRESS = "0x1812884e5bb4fe34337987138494c083ce12d4ac";
+export const MY_AGENT_ADDRESS = "0x1555040d132e30efb092d3a5f096beff57b4ed75";
 

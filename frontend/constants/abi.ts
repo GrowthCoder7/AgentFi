@@ -27,8 +27,8 @@ export const AGENT_ACCOUNT_ABI = [
   },
   {
     "inputs": [
-        { "internalType": "address", "name": "signer", "type": "address" }, 
-        { "internalType": "bool", "name": "permission", "type": "bool" }
+        { "internalType": "address[]", "name": "signer", "type": "address[]" }, 
+        { "internalType": "bool[]", "name": "permission", "type": "bool[]" }
     ],
     "name": "setPermissions", // <--- CRITICAL FOR AI CONTROL
     "outputs": [],

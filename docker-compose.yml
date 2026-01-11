@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Service 1: The Brain 🧠 (Unchanged)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: agent_brain
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - agent_network
+    tty: true 
+    restart: always
+
+  # Service 2: The Agent 🕵️‍♂️ (Updated Paths)
+  agent:
+    # 1. Point to the subdirectory where Dockerfile & package.json live
+    build: ./phala-agents
+    
+    container_name: agent_body
+    depends_on:
+      - ollama
+    
+    # 2. Explicitly point to the .env file in the subdirectory
+    env_file:
+      - ./phala-agents/.env 
+      
+    environment:
+      - OLLAMA_URL=http://ollama:11434/api/generate
+    networks:
+      - agent_network
+    command: ["sh", "-c", "npx tsx src/ai_agent_foss.ts"]
+
+volumes:
+  ollama_data:
+
+networks:
+  agent_network:

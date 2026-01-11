@@ -2,7 +2,8 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import AgentDashboard from '../components/AgentDashboard';
 import DecisionGraph from '@/components/DecisionGraph';
 import AgentWallet from '@/components/AgentWallet';
-import TradeHistory from '@/components/TradeHistory';
+// import TradeHistory from '@/components/TradeHistory';
+import AgentDelegation from '@/components/AgentDelegation';
 
 export default function Home() {
   return (
@@ -28,7 +29,7 @@ export default function Home() {
 
       The Agent Dashboard
       <AgentDashboard />
-      <TradeHistory/>
+      <AgentDelegation/>
       <DecisionGraph/>
       <AgentWallet/>
     </main>
