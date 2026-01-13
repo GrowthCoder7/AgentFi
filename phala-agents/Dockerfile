@@ -1,15 +1,19 @@
-# Use a lightweight Node.js image
-FROM node:18-alpine
+# Use lightweight Node image
+FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files first
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy the rest of your code
+# Copy source code
 COPY . .
 
-# Default command (will be overridden by docker-compose)
-CMD ["npx", "tsx", "src/ai_agent_foss.ts"]
+# ✅ FIX: Install 'tsx' (Modern TypeScript Executor)
+RUN npm install -g tsx
+
+# ✅ FIX: Use 'tsx' instead of 'ts-node'
+CMD ["tsx", "src/ai_agent_foss.ts"]

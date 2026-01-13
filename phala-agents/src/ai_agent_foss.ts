@@ -1,395 +1,582 @@
-// import { createPublicClient, createWalletClient, http, parseEther, encodeFunctionData, formatEther } from 'viem';
+// import { Ollama } from 'ollama';
+// import Parser from 'rss-parser';
+// import { createWalletClient, http, parseEther, publicActions } from 'viem';
 // import { privateKeyToAccount } from 'viem/accounts';
 // import { sepolia } from 'viem/chains';
-// import dotenv from 'dotenv';
-
-// dotenv.config();
+// import 'dotenv/config';
 
 // // --- CONFIGURATION ---
-// const OLLAMA_ENDPOINT = process.env.OLLAMA_URL || "http://localhost:11434/api/generate";
-// const MODEL_NAME = "llama3.2"; 
-// const COINGECKO_API = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true";
+// const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://agent_brain:11434';
+// const ollamaClient = new Ollama({ host: OLLAMA_HOST });
+// const parser = new Parser();
 
-// const AGENT_ADDRESS = process.env.AGENT_ADDRESS as `0x${string}`;
-// const ROUTER_ADDRESS = "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E"; // SwapRouter02
-// const WETH_ADDRESS = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
-// const UNI_ADDRESS = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
-// const POOL_FEE = 3000;
+// // WALLET SETUP (Base Sepolia Testnet)
+// // Note: In production, never hardcode the fallback key. This is a known testnet private key.
+// const PRIVATE_KEY = process.env.OPERATOR_PRIVATE_KEY || "0xd8e318557920a9fef30877e240b41254e21e18c42b1a99391baaf7ecec5cd2f4"; 
+// const ACCOUNT = privateKeyToAccount(PRIVATE_KEY as `0x${string}`); 
 
-// // --- ABIS ---
-// const AGENT_ABI = [
-//   { inputs: [{name: "to", type: "address"}, {name: "value", type: "uint256"}, {name: "data", type: "bytes"}, {name: "operation", type: "uint8"}], name: "execute", outputs: [{name: "", type: "bytes"}], stateMutability: "payable", type: "function" }
-// ] as const;
-// const WETH_ABI = [
-//     { inputs: [], name: "deposit", outputs: [], stateMutability: "payable", type: "function" },
-//     { inputs: [{name: "guy", type: "address"}, {name: "wad", type: "uint256"}], name: "approve", outputs: [{name: "", type: "bool"}], stateMutability: "nonpayable", type: "function" }
-// ] as const;
-// const ROUTER_ABI = [
-//   { inputs: [{components: [{name: "tokenIn", type: "address"}, {name: "tokenOut", type: "address"}, {name: "fee", type: "uint24"}, {name: "recipient", type: "address"}, {name: "amountIn", type: "uint256"}, {name: "amountOutMinimum", type: "uint256"}, {name: "sqrtPriceLimitX96", type: "uint160"}], name: "params", type: "tuple"}], name: "exactInputSingle", outputs: [{name: "amountOut", type: "uint256"}], stateMutability: "payable", type: "function" }
-// ] as const;
+// const client = createWalletClient({
+//   account: ACCOUNT,
+//   chain: sepolia,
+//   transport: http()
+// }).extend(publicActions); // Adds ability to read data too
 
-// // --- 🌐 REAL WORLD DATA FETCHING ---
-// async function fetchRealMarketData(): Promise<string> {
+// // --- 1. THE EYES (Data Fetching) ---
+
+// async function fetchMarketStats() {
 //     try {
-//         console.log("🌐 Fetching live market data from Coingecko...");
-//         const response = await fetch(COINGECKO_API);
-//         const data = await response.json();
+//         console.log("   🔍 Fetching price history for RSI calculation...");
+//         // Mocking Data for Stability. In production, replace with CoinGecko API.
+//         const prices = [
+//             3000, 3050, 3100, 3080, 3060, 3040, 3020, 
+//             3010, 3005, 3000, 2990, 2980, 2950, 2900 
+//         ]; 
+//         const currentPrice = 3095.36; 
         
-//         // Extract ETH data
-//         const ethPrice = data.ethereum.usd;
-//         const ethChange = data.ethereum.usd_24h_change;
-
-//         // Create a narrative for the AI
-//         let narrative = `Ethereum current price is $${ethPrice}. `;
-//         if (ethChange > 0) {
-//             narrative += `The market is up by ${ethChange.toFixed(2)}% in the last 24 hours. Bullish momentum.`;
-//         } else {
-//             narrative += `The market is down by ${ethChange.toFixed(2)}% in the last 24 hours. Bearish pressure.`;
+//         // Simple RSI Calculation Logic
+//         const gains = [];
+//         const losses = [];
+//         for (let i = 1; i < prices.length; i++) {
+//             const difference = prices[i] - prices[i - 1];
+//             if (difference >= 0) gains.push(difference);
+//             else losses.push(Math.abs(difference));
 //         }
         
-//         return narrative;
+//         const avgGain = gains.reduce((a, b) => a + b, 0) / 14;
+//         const avgLoss = losses.reduce((a, b) => a + b, 0) / 14;
+//         const rs = avgGain / avgLoss;
+//         const rsi = 100 - (100 / (1 + rs));
+
+//         return { price: currentPrice, rsi: rsi };
 //     } catch (error) {
-//         console.error("❌ API Error:", error);
-//         return "Market data unavailable.";
+//         console.error("   ❌ Error fetching market data:", error);
+//         return null;
 //     }
 // }
 
-// // --- 🧠 AI BRAIN ---
-// async function getFossAIDecision(marketData: string): Promise<boolean> {
-//     console.log(`\n🧠 Sending data to Local Llama 3: "${marketData}"`);
-
-//     // We trick the AI into being a momentum trader
-//     const prompt = `
-//     You are an aggressive DeFi Trading Agent. 
-    
-//     MARKET REPORT: "${marketData}"
-    
-//     STRATEGY:
-//     - If market is UP or showing Bullish momentum -> YES (Buy).
-//     - If market is DOWN or Bearish -> NO (Hold).
-    
-//     DECISION (Strictly YES or NO):
-//     `;
-
+// async function fetchNews() {
 //     try {
-//         const response = await fetch(OLLAMA_ENDPOINT, {
-//             method: "POST",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify({
-//                 model: MODEL_NAME,
-//                 prompt: prompt,
-//                 stream: false
-//             })
-//         });
-
-//         const json = await response.json();
-//         if (json.error || !json.response) return false;
-
-//         const decision = json.response.trim().toUpperCase();
-//         console.log(`💡 Llama Decision: [${decision}]`);
-
-//         if (decision.includes("YES")) return true;
+//         console.log("   📰 Reading the news...");
+//         const feed = await parser.parseURL('https://cointelegraph.com/rss');
+//         // Take top 3 headlines
+//         const headlines = feed.items.slice(0, 3).map(item => item.title).join(". ");
+//         console.log(`      "${headlines.substring(0, 60)}..."`);
+//         return headlines;
 //     } catch (error) {
-//         console.error("❌ AI Error:", error);
+//         console.error("   ❌ Error fetching news:", error);
+//         return "No news available.";
 //     }
-//     return false;
 // }
 
-// // --- 🛠️ EXECUTION ARM ---
-// async function executeTrade(client: any, wallet: any) {
-//     const amountToSwap = parseEther("0.0001");
-//     console.log("   -> ⚡ Executing Live Trade...");
+// // --- 2. THE HANDS (Execution) ---
 
-//     // 1. Wrap
-//     const wrapData = encodeFunctionData({ abi: WETH_ABI, functionName: 'deposit' });
-//     const wrapHash = await wallet.writeContract({
-//         address: AGENT_ADDRESS, abi: AGENT_ABI, functionName: 'execute',
-//         args: [WETH_ADDRESS, amountToSwap, wrapData, 0]
-//     });
-//     await client.waitForTransactionReceipt({ hash: wrapHash });
-
-//     // 2. Approve
-//     const approveData = encodeFunctionData({ abi: WETH_ABI, functionName: 'approve', args: [ROUTER_ADDRESS, amountToSwap] });
-//     const approveHash = await wallet.writeContract({
-//         address: AGENT_ADDRESS, abi: AGENT_ABI, functionName: 'execute',
-//         args: [WETH_ADDRESS, 0n, approveData, 0]
-//     });
-//     await client.waitForTransactionReceipt({ hash: approveHash });
-
-//     // 3. Swap
-//     const swapData = encodeFunctionData({
-//         abi: ROUTER_ABI, functionName: 'exactInputSingle',
-//         args: [{
-//             tokenIn: WETH_ADDRESS, tokenOut: UNI_ADDRESS, fee: POOL_FEE, recipient: AGENT_ADDRESS,
-//             amountIn: amountToSwap, amountOutMinimum: 0n, sqrtPriceLimitX96: 0n
-//         }]
-//     });
-//     const swapHash = await wallet.writeContract({
-//         address: AGENT_ADDRESS, abi: AGENT_ABI, functionName: 'execute',
-//         args: [ROUTER_ADDRESS, 0n, swapData, 0]
-//     });
-//     console.log(`   🚀 LIVE SWAP CONFIRMED: https://sepolia.etherscan.io/tx/${swapHash}`);
+// async function executeTrade() {
+//     console.log("   🔴 TRADING SIGNAL DETECTED! EXECUTING ON-CHAIN...");
+//     try {
+//         // Send 0.0001 ETH to self as a "Buy" signal test
+//         const hash = await client.sendTransaction({
+//             to: ACCOUNT.address, 
+//             value: parseEther('0.0001') 
+//         });
+//         console.log(`   🚀 Transaction Sent! Hash: https://sepolia.basescan.org/tx/${hash}`);
+//         return hash;
+//     } catch (error) {
+//         console.error("   ❌ Trade Failed:", error);
+//         return null;
+//     }
 // }
 
-// // --- 🤖 MAIN LOOP ---
-// async function runFossAgent() {
-//     console.log("🐧 Starting Real-World AI Agent...");
+// // --- 3. THE BRAIN (Daemon Loop) ---
+
+// async function startDaemon() {
+//     console.log("\n🐧 Foss Agent: QUANT MODE ENGAGED");
+//     console.log("---------------------------------------");
+
+//     while (true) {
+//         console.log("\n⏰ Cycle Active...");
+
+//         // Check Wallet Balance
+//         const balance = await client.getBalance({ address: ACCOUNT.address });
+//         const ethBalance = Number(balance) / 1e18;
+//         console.log(`   💰 Wallet Balance: ${ethBalance.toFixed(4)} ETH`);
+
+//         // Get Data
+//         const market = await fetchMarketStats();
+//         const news = await fetchNews();
+        
+//         if (!market) {
+//             console.log("   ⚠️ Missing market data, skipping cycle.");
+//             await new Promise(resolve => setTimeout(resolve, 10000));
+//             continue;
+//         }
+
+//         console.log(`   📊 Market Status: Price $${market.price.toFixed(2)} | RSI: ${market.rsi.toFixed(2)}`);
+
+//         // Construct Prompt
+//         const prompt = `
+//     You are a Senior DeFi Risk Manager and Algorithmic Trader.
+//     Your goal is capital preservation first, and profit generation second.
+
+//     ### MARKET SNAPSHOT
+//     - Asset: Ethereum (ETH)
+//     - Current Price: $${market.price.toFixed(2)} USD
+//     - RSI (14-period): ${market.rsi.toFixed(2)} 
+//     - News Sentiment Context: "${news}"
+
+//     ### TRADING STRATEGY & RULES
+//     1. **Technicals (RSI):** - RSI < 30: Potential Oversold (Buy Zone), BUT watch for falling knife momentum.
+//        - RSI > 70: Potential Overbought (Sell/Wait Zone).
+//        - RSI 30-70: Neutral/Trend Continuation.
     
-//     if (!process.env.OPERATOR_PRIVATE_KEY) {
-//         console.error("❌ Key missing.");
-//         process.exit(1);
+//     2. **Fundamentals (News):**
+//        - Negative News + Low RSI = "Falling Knife" (High Risk: DO NOT BUY).
+//        - Positive News + Low RSI = "Golden Dip" (High Conviction BUY).
+//        - Neutral News + Low RSI = "Technical Bounce" (Moderate Buy).
+
+//     3. **Risk Guardrails:**
+//        - NEVER recommend a buy if the news implies a systemic failure, hack, or regulatory crackdown, regardless of RSI.
+
+//     ### TASK
+//     Analyze the data and produce a JSON response. 
+//     1. Analyze the RSI context.
+//     2. Analyze the news sentiment.
+//     3. Determine a decision: "BUY", "SELL", or "HOLD".
+//     4. Assign a confidence score (0-100).
+
+//     ### OUTPUT FORMAT (Strict JSON Only, no markdown):
+//     {
+//       "thought_process": "Brief explanation of your analysis...",
+//       "risk_factor": "LOW", "MEDIUM", or "HIGH",
+//       "decision": "BUY", "SELL", or "HOLD",
+//       "confidence": 85
 //     }
+// `;
 
-//     const account = privateKeyToAccount(process.env.OPERATOR_PRIVATE_KEY as `0x${string}`);
-//     const client = createPublicClient({ chain: sepolia, transport: http() });
-//     const wallet = createWalletClient({ account, chain: sepolia, transport: http() });
+//         console.log("   🧠 Consulting Quant Model...");
+        
+//         try {
+//             const response = await ollamaClient.chat({
+//                 model: 'llama3.2', // Ensure this matches your docker-compose model
+//                 messages: [{ role: 'user', content: prompt }],
+//             });
 
-//     // 1. Fetch REAL Data
-//     const liveMarketData = await fetchRealMarketData();
+//             const rawDecision = response.message.content.trim();
+//             // Clean the output to get just the word
+//             const decision = rawDecision.toUpperCase().replace(/[^A-Z]/g, '');
 
-//     // 2. Ask AI
-//     const shouldTrade = await getFossAIDecision(liveMarketData);
+//             console.log(`   💡 Verdict: [${decision}]`);
 
-//     // 3. Act
-//     if (shouldTrade) {
-//         console.log("✅ Market conditions favorable. Trading...");
-//         await executeTrade(client, wallet);
-//     } else {
-//         console.log("⏸️ Market conditions unfavorable. Holding cash.");
+//             if (decision.includes("YES")) {
+//                 await executeTrade();
+//             } else {
+//                 console.log("   ⏳ Holding position.");
+//             }
+
+//         } catch (error) {
+//             console.error("   ❌ LLM Error:", error);
+//         }
+
+//         // Wait 30 seconds before next cycle
+//         await new Promise(resolve => setTimeout(resolve, 30000));
 //     }
-    
-//     console.log("💤 Agent entering sleep mode...");
 // }
 
-// runFossAgent();
+// startDaemon();
 
 
+// import { Ollama } from 'ollama';
+// import Parser from 'rss-parser';
+// import { createWalletClient, http, parseEther, publicActions } from 'viem';
+// import { privateKeyToAccount } from 'viem/accounts';
+// import { sepolia } from 'viem/chains';
+// import 'dotenv/config';
+
+// // --- CONFIGURATION ---
+// const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://agent_brain:11434';
+// const ollamaClient = new Ollama({ host: OLLAMA_HOST });
+// const parser = new Parser();
+
+// // WALLET SETUP (Base Sepolia Testnet)
+// const PRIVATE_KEY = process.env.OPERATOR_PRIVATE_KEY || "0xd8e318557920a9fef30877e240b41254e21e18c42b1a99391baaf7ecec5cd2f4"; 
+// const ACCOUNT = privateKeyToAccount(PRIVATE_KEY as `0x${string}`); 
+
+// const client = createWalletClient({
+//   account: ACCOUNT,
+//   chain: sepolia,
+//   transport: http()
+// }).extend(publicActions);
+
+// // --- HELPER: Clean LLM Output ---
+// function cleanJson(text: string): string {
+//     // Remove markdown code blocks if present (e.g. ```json ... ```)
+//     return text.replace(/```json|```/g, '').trim();
+// }
+
+// // --- 1. THE EYES (Data Fetching) ---
+
+// async function fetchMarketStats() {
+//     try {
+//         console.log("   🔍 Fetching price history for RSI calculation...");
+//         // Mocking Data. In production, replace with real API.
+//         const prices = [
+//             3000, 3050, 3100, 3080, 3060, 3040, 3020, 
+//             3010, 3005, 3000, 2990, 2980, 2950, 2900 
+//         ]; 
+//         const currentPrice = 3095.36; 
+        
+//         // Simple RSI Calculation
+//         const gains = [];
+//         const losses = [];
+//         for (let i = 1; i < prices.length; i++) {
+//             const difference = prices[i] - prices[i - 1];
+//             if (difference >= 0) gains.push(difference);
+//             else losses.push(Math.abs(difference));
+//         }
+        
+//         const avgGain = gains.reduce((a, b) => a + b, 0) / 14;
+//         const avgLoss = losses.reduce((a, b) => a + b, 0) / 14;
+//         const rs = avgGain / avgLoss;
+//         const rsi = 100 - (100 / (1 + rs));
+
+//         return { price: currentPrice, rsi: rsi };
+//     } catch (error) {
+//         console.error("   ❌ Error fetching market data:", error);
+//         return null;
+//     }
+// }
+
+// async function fetchNews() {
+//     try {
+//         console.log("   📰 Reading the news...");
+//         const feed = await parser.parseURL('https://cointelegraph.com/rss');
+//         const headlines = feed.items.slice(0, 3).map(item => item.title).join(". ");
+//         console.log(`      "${headlines.substring(0, 60)}..."`);
+//         return headlines;
+//     } catch (error) {
+//         console.error("   ❌ Error fetching news:", error);
+//         return "No news available.";
+//     }
+// }
+
+// // --- 2. THE HANDS (Execution) ---
+
+// async function executeTrade() {
+//     console.log("   🔴 TRADING SIGNAL DETECTED! EXECUTING ON-CHAIN...");
+//     try {
+//         const hash = await client.sendTransaction({
+//             to: ACCOUNT.address, 
+//             value: parseEther('0.0001') 
+//         });
+//         console.log(`   🚀 Transaction Sent! Hash: https://sepolia.basescan.org/tx/${hash}`);
+//         return hash;
+//     } catch (error) {
+//         console.error("   ❌ Trade Failed:", error);
+//         return null;
+//     }
+// }
+
+// // --- 3. THE BRAIN (Daemon Loop) ---
+
+// async function startDaemon() {
+//     console.log("\n🐧 Foss Agent: RISK MANAGER MODE ENGAGED");
+//     console.log("---------------------------------------");
+    
+//     // 
+
+//     while (true) {
+//         console.log("\n⏰ Cycle Active...");
+
+//         // Check Wallet
+//         const balance = await client.getBalance({ address: ACCOUNT.address });
+//         const ethBalance = Number(balance) / 1e18;
+//         console.log(`   💰 Wallet Balance: ${ethBalance.toFixed(4)} ETH`);
+
+//         // Get Data
+//         const market = await fetchMarketStats();
+//         const news = await fetchNews();
+        
+//         if (!market) {
+//             console.log("   ⚠️ Missing market data, skipping cycle.");
+//             await new Promise(resolve => setTimeout(resolve, 10000));
+//             continue;
+//         }
+
+//         console.log(`   📊 Market Status: Price $${market.price.toFixed(2)} | RSI: ${market.rsi.toFixed(2)}`);
+
+//         // --- NEW PROMPT: JSON OUTPUT ---
+//         const prompt = `
+//     You are a Senior DeFi Risk Manager and Algorithmic Trader.
+//     Your goal is capital preservation first, and profit generation second.
+
+//     ### MARKET SNAPSHOT
+//     - Asset: Ethereum (ETH)
+//     - Current Price: $${market.price.toFixed(2)} USD
+//     - RSI (14-period): ${market.rsi.toFixed(2)} 
+//     - News Sentiment Context: "${news}"
+
+//     ### TRADING STRATEGY & RULES
+//     1. **Technicals (RSI):** - RSI < 30: Potential Oversold (Buy Zone), BUT watch for falling knife.
+//        - RSI > 70: Potential Overbought (Sell/Wait Zone).
+    
+//     2. **Fundamentals (News):**
+//        - Negative News + Low RSI = "Falling Knife" (High Risk: DO NOT BUY).
+//        - Positive News + Low RSI = "Golden Dip" (High Conviction BUY).
+//        - Neutral News + Low RSI = "Technical Bounce" (Moderate Buy).
+
+//     3. **Risk Guardrails:**
+//        - NEVER recommend a buy if the news implies a systemic failure, hack, or regulatory crackdown.
+
+//     ### TASK
+//     Analyze the data and produce a JSON response. 
+//     1. Analyze the RSI context.
+//     2. Analyze the news sentiment.
+//     3. Determine a decision: "BUY", "SELL", or "HOLD".
+//     4. Assign a confidence score (0-100).
+
+//     ### OUTPUT FORMAT (Strict JSON Only, no markdown):
+//     {
+//       "thought_process": "Brief explanation of your analysis...",
+//       "risk_factor": "LOW", "MEDIUM", or "HIGH",
+//       "decision": "BUY", "SELL", or "HOLD",
+//       "confidence": 85
+//     }
+// `;
+
+//         console.log("   🧠 Consulting Quant Model...");
+        
+//         try {
+//             const response = await ollamaClient.chat({
+//                 model: 'llama3.2', 
+//                 messages: [{ role: 'user', content: prompt }],
+//             });
+
+//             const rawContent = response.message.content;
+//             const cleanedContent = cleanJson(rawContent); // Remove markdown formatting
+
+//             // Parse JSON
+//             const data = JSON.parse(cleanedContent);
+
+//             console.log(`   🤖 Logic: ${data.thought_process}`);
+//             console.log(`   ⚠️ Risk: ${data.risk_factor}`);
+//             console.log(`   🎯 Confidence: ${data.confidence}%`);
+//             console.log(`   💡 Verdict: [${data.decision}]`);
+
+//             // --- EXECUTION LOGIC ---
+//             // We now have 3 checks: 
+//             // 1. Decision is BUY
+//             // 2. Confidence is High (>70)
+//             // 3. Risk is NOT High
+//             if (data.decision === "BUY" && data.confidence > 70 && data.risk_factor !== "HIGH") {
+//                 await executeTrade();
+//             } else {
+//                 console.log("   ⏳ Holding position (Criteria not met).");
+//             }
+
+//         } catch (error) {
+//             console.error("   ❌ LLM/JSON Error:", error);
+//             // Optional: Print raw response to debug if JSON fails
+//             // console.log("Raw Response:", response.message.content);
+//         }
+
+//         // Wait 30 seconds
+//         await new Promise(resolve => setTimeout(resolve, 30000));
+//     }
+// }
+
+// startDaemon();
 
 
-
-import { createPublicClient, createWalletClient, http, parseEther, encodeFunctionData, formatEther } from 'viem';
+import { Ollama } from 'ollama';
+import Parser from 'rss-parser';
+import { createWalletClient, http, parseEther, publicActions } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import 'dotenv/config';
 
 // --- CONFIGURATION ---
-const OLLAMA_ENDPOINT = process.env.OLLAMA_URL || "http://localhost:11434/api/generate";
-const MODEL_NAME = "llama3.2";
-const COINGECKO_API = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true";
-const CHECK_INTERVAL_MS = 60000; // Check every 60 seconds
+const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434'; // Default to localhost for non-docker
+const ollamaClient = new Ollama({ host: OLLAMA_HOST });
+const parser = new Parser();
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
 
-const AGENT_ADDRESS = process.env.AGENT_ADDRESS as `0x${string}`;
-const ROUTER_ADDRESS = "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E"; // SwapRouter02
-const WETH_ADDRESS = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
-const UNI_ADDRESS = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
-const POOL_FEE = 3000;
+// WALLET SETUP (Base Sepolia Testnet)
+const PRIVATE_KEY = process.env.OPERATOR_PRIVATE_KEY || "0xd8e318557920a9fef30877e240b41254e21e18c42b1a99391baaf7ecec5cd2f4"; 
+const ACCOUNT = privateKeyToAccount(PRIVATE_KEY as `0x${string}`); 
 
-// --- ABIS ---
-const AGENT_ABI = [
-  { inputs: [{name: "to", type: "address"}, {name: "value", type: "uint256"}, {name: "data", type: "bytes"}, {name: "operation", type: "uint8"}], name: "execute", outputs: [{name: "", type: "bytes"}], stateMutability: "payable", type: "function" }
-] as const;
-const WETH_ABI = [
-    { inputs: [], name: "deposit", outputs: [], stateMutability: "payable", type: "function" },
-    { inputs: [{name: "guy", type: "address"}, {name: "wad", type: "uint256"}], name: "approve", outputs: [{name: "", type: "bool"}], stateMutability: "nonpayable", type: "function" }
-] as const;
-const ROUTER_ABI = [
-  { inputs: [{components: [{name: "tokenIn", type: "address"}, {name: "tokenOut", type: "address"}, {name: "fee", type: "uint24"}, {name: "recipient", type: "address"}, {name: "amountIn", type: "uint256"}, {name: "amountOutMinimum", type: "uint256"}, {name: "sqrtPriceLimitX96", type: "uint160"}], name: "params", type: "tuple"}], name: "exactInputSingle", outputs: [{name: "amountOut", type: "uint256"}], stateMutability: "payable", type: "function" }
-] as const;
+const client = createWalletClient({
+  account: ACCOUNT,
+  chain: sepolia,
+  transport: http()
+}).extend(publicActions);
 
-// --- UTILS ---
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// --- 🌐 DATA FETCHING ---
-async function fetchRealMarketData(): Promise<string> {
+// --- HELPER: Notifications (The Voice) ---
+async function broadcast(message: string) {
+    if (!DISCORD_WEBHOOK_URL) return; // Silent mode if no URL
     try {
-        const response = await fetch(COINGECKO_API);
-        if (!response.ok) throw new Error("API rate limit or failure");
-        const data = await response.json();
-        
-        const ethPrice = data.ethereum.usd;
-        const ethChange = data.ethereum.usd_24h_change;
-
-        let narrative = `Ethereum Price: $${ethPrice}. `;
-        if (ethChange > 0) {
-            narrative += `Market UP ${ethChange.toFixed(2)}% (24h). Bullish momentum.`;
-        } else {
-            narrative += `Market DOWN ${ethChange.toFixed(2)}% (24h). Bearish pressure.`;
-        }
-        return narrative;
-    } catch (error) {
-        console.error("❌ API Error (using backup data):", error);
-        return "Ethereum Price: $3000. Market stable.";
-    }
-}
-
-// --- 🧠 AI BRAIN ---
-async function getFossAIDecision(marketData: string): Promise<boolean> {
-    // We only log the prompt briefly to keep logs clean
-    console.log(`   🧠 Analyzing: "${marketData}"`);
-
-    const prompt = `
-    Role: Aggressive DeFi Trader.
-    Report: "${marketData}"
-    Task: If market is UP or BULLISH -> Output "YES". If DOWN/STABLE -> Output "NO".
-    Response (Only YES or NO):
-    `;
-
-    try {
-        const response = await fetch(OLLAMA_ENDPOINT, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model: MODEL_NAME, prompt: prompt, stream: false })
+        await fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: message })
         });
-        const json = await response.json();
-        if (json.error || !json.response) return false;
-
-        const decision = json.response.trim().toUpperCase();
-        console.log(`   💡 Verdict: [${decision}]`);
-
-        if (decision.includes("YES")) return true;
-    } catch (error) {
-        console.error("   ❌ Brain Freeze (AI Error):", error);
-    }
-    return false;
-}
-
-// --- 🛠️ EXECUTION ARM ---
-// Replace the existing executeTrade function with this one:
-
-async function executeTrade(client: any, wallet: any) {
-    const amountToSwap = parseEther("0.0001"); // Swapping tiny amount to test
-    console.log("   ⚡ Triggering Swap...");
-
-    try {
-        // --- STEP 1: WRAP ETH -> WETH ---
-        // We must send ETH 'value' along with this transaction so the Agent has funds to wrap.
-        console.log("      1. Wrapping ETH...");
-        const wrapData = encodeFunctionData({ abi: WETH_ABI, functionName: 'deposit' });
-        
-        const wrapHash = await wallet.writeContract({
-            address: AGENT_ADDRESS,
-            abi: AGENT_ABI,
-            functionName: 'execute',
-            args: [WETH_ADDRESS, amountToSwap, wrapData, 0], 
-            value: amountToSwap, // <--- CRITICAL FIX: Sending ETH with the tx
-            chain: sepolia,
-            account: wallet.account
-        });
-        await client.waitForTransactionReceipt({ hash: wrapHash }); // Wait for it to finish
-        console.log("         ✅ Wrapped.");
-
-        // --- STEP 2: APPROVE ROUTER ---
-        // Authorize Uniswap to spend our WETH
-        console.log("      2. Approving Uniswap...");
-        const approveData = encodeFunctionData({ abi: WETH_ABI, functionName: 'approve', args: [ROUTER_ADDRESS, amountToSwap] });
-        
-        const approveHash = await wallet.writeContract({
-            address: AGENT_ADDRESS,
-            abi: AGENT_ABI,
-            functionName: 'execute',
-            args: [WETH_ADDRESS, 0n, approveData, 0],
-            chain: sepolia,
-            account: wallet.account
-        });
-        await client.waitForTransactionReceipt({ hash: approveHash }); // Wait for it to finish
-        console.log("         ✅ Approved.");
-
-        // --- STEP 3: EXECUTE SWAP ---
-        console.log("      3. Swapping WETH -> UNI...");
-        const swapData = encodeFunctionData({
-            abi: ROUTER_ABI, 
-            functionName: 'exactInputSingle',
-            args: [{
-                tokenIn: WETH_ADDRESS,
-                tokenOut: UNI_ADDRESS,
-                fee: POOL_FEE,
-                recipient: AGENT_ADDRESS,
-                amountIn: amountToSwap,
-                amountOutMinimum: 0n,
-                sqrtPriceLimitX96: 0n
-            }]
-        });
-
-        const swapHash = await wallet.writeContract({
-            address: AGENT_ADDRESS,
-            abi: AGENT_ABI,
-            functionName: 'execute',
-            args: [ROUTER_ADDRESS, 0n, swapData, 0],
-            chain: sepolia,
-            account: wallet.account
-        });
-
-        console.log(`   🚀 SWAP SUCCESS: https://sepolia.etherscan.io/tx/${swapHash}`);
-        
-        // Final wait
-        await client.waitForTransactionReceipt({ hash: swapHash });
-
     } catch (e) {
-        console.error("   ❌ Trade Failed:", e);
+        console.error("   ❌ Failed to send notification", e);
     }
 }
 
-// Place this ABOVE the startDaemon function
-
-async function checkWalletHealth(client: any, address: `0x${string}`): Promise<boolean> {
-    const balance = await client.getBalance({ address });
-    const balanceEth = formatEther(balance);
+// --- HELPER: Clean LLM Output ---
+// --- HELPER: Clean LLM Output ---
+function cleanJson(text: string): string {
+    // 1. Remove markdown code blocks
+    let cleaned = text.replace(/```json|```/g, '').trim();
     
-    console.log(`   💰 Wallet Balance: ${parseFloat(balanceEth).toFixed(4)} ETH`);
-
-    // STOP if balance is below 0.05 ETH (Save money for gas)
-    if (parseFloat(balanceEth) < 0.01) {
-        console.log("   ⚠️ LOW FUEL WARNING: Balance too low to trade safely.");
-        return false;
+    // 2. Find the first '{' and the last '}' to extract JUST the JSON object
+    const firstOpen = cleaned.indexOf('{');
+    const lastClose = cleaned.lastIndexOf('}');
+    
+    if (firstOpen !== -1 && lastClose !== -1) {
+        return cleaned.substring(firstOpen, lastClose + 1);
     }
-    return true;
+    
+    // Fallback: return original if no brackets found (will fail safely in try/catch)
+    return cleaned;
 }
 
-// --- 🤖 DAEMON LOOP ---
+// --- 1. THE EYES (Data Fetching) ---
+async function fetchMarketStats() {
+    try {
+        console.log("   🔍 Fetching price history for RSI calculation...");
+        // Mocking Data. In production, replace with CoinGecko/Binance API.
+        const prices = [
+            3000, 3050, 3100, 3080, 3060, 3040, 3020, 
+            3010, 3005, 3000, 2990, 2980, 2950, 2900 
+        ]; 
+        const currentPrice = 3095.36; 
+        
+        // RSI Calculation
+        const gains = [];
+        const losses = [];
+        for (let i = 1; i < prices.length; i++) {
+            const difference = prices[i] - prices[i - 1];
+            if (difference >= 0) gains.push(difference);
+            else losses.push(Math.abs(difference));
+        }
+        
+        const avgGain = gains.reduce((a, b) => a + b, 0) / 14;
+        const avgLoss = losses.reduce((a, b) => a + b, 0) / 14;
+        const rs = avgGain / avgLoss;
+        const rsi = 100 - (100 / (1 + rs));
+
+        return { price: currentPrice, rsi: rsi };
+    } catch (error) {
+        console.error("   ❌ Error fetching market data:", error);
+        return null;
+    }
+}
+
+async function fetchNews() {
+    try {
+        console.log("   📰 Reading the news...");
+        const feed = await parser.parseURL('https://cointelegraph.com/rss');
+        const headlines = feed.items.slice(0, 3).map(item => item.title).join(". ");
+        return headlines;
+    } catch (error) {
+        console.error("   ❌ Error fetching news:", error);
+        return "No news available.";
+    }
+}
+
+// --- 2. THE HANDS (Execution) ---
+async function executeTrade() {
+    console.log("   🔴 TRADING SIGNAL DETECTED! EXECUTING ON-CHAIN...");
+    
+    // Alert Discord: Intent to Trade
+    await broadcast(`🚨 **TRADE SIGNAL DETECTED**\nPreparing to BUY ETH...`);
+
+    try {
+        const hash = await client.sendTransaction({
+            to: ACCOUNT.address, 
+            value: parseEther('0.0001') 
+        });
+        console.log(`   🚀 Transaction Sent! Hash: ${hash}`);
+        
+        // Alert Discord: Success
+        await broadcast(`✅ **ORDER EXECUTED**\nTx Hash: [View on Explorer](https://sepolia.basescan.org/tx/${hash})`);
+        
+        return hash;
+    } catch (error) {
+        console.error("   ❌ Trade Failed:", error);
+        await broadcast(`⚠️ **TRADE FAILED**\nError: ${error}`);
+        return null;
+    }
+}
+
+// --- 3. THE BRAIN (Daemon Loop) ---
 async function startDaemon() {
-    console.log("🐧 Foss Agent: DAEMON MODE STARTED");
+    console.log("\n🐧 Foss Agent: PROD MODE ENGAGED");
     console.log("---------------------------------------");
-    
-    if (!process.env.OPERATOR_PRIVATE_KEY) {
-        console.error("❌ Key missing.");
-        process.exit(1);
-    }
-
-    const account = privateKeyToAccount(process.env.OPERATOR_PRIVATE_KEY as `0x${string}`);
-    const client = createPublicClient({ chain: sepolia, transport: http() });
-    const wallet = createWalletClient({ account, chain: sepolia, transport: http() });
-
-    let cycleCount = 1;
+    await broadcast("🤖 **Agent Online**: Monitoring ETH Markets...");
 
     while (true) {
-        const timestamp = new Date().toLocaleTimeString();
-        console.log(`\n⏰ Cycle #${cycleCount} [${timestamp}]`);
+        console.log("\n⏰ Cycle Active...");
 
-        // 1. HEALTH CHECK (The new step)
-        const isHealthy = await checkWalletHealth(client, AGENT_ADDRESS);
-        if (!isHealthy) {
-            console.log("   🛑 Stopping agent to preserve funds.");
-            break; // Kills the loop
-        }
-        // 1. Fetch
-        const liveMarketData = await fetchRealMarketData();
-
-        // 2. Decide
-        const shouldTrade = await getFossAIDecision(liveMarketData);
-
-        // 3. Act
-        if (shouldTrade) {
-            await executeTrade(client, wallet);
-        } else {
-            console.log("   ✋ Holding cash (Market condition unmet).");
+        const market = await fetchMarketStats();
+        const news = await fetchNews();
+        
+        if (!market) {
+            console.log("   ⚠️ Missing data, skipping.");
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            continue;
         }
 
-        // 4. Sleep
-        console.log(`   💤 Sleeping for ${CHECK_INTERVAL_MS / 1000}s...`);
-        await sleep(CHECK_INTERVAL_MS);
-        cycleCount++;
+        const prompt = `
+    You are a Senior DeFi Risk Manager.
+
+    ### MARKET SNAPSHOT
+    - Asset: Ethereum (ETH)
+    - Current Price: $${market.price.toFixed(2)} USD
+    - RSI (14-period): ${market.rsi.toFixed(2)} 
+    - News Sentiment Context: "${news}"
+
+    ### TRADING RULES
+    1. **Technicals:** RSI < 30 is BUY zone, RSI > 70 is SELL.
+    2. **Fundamentals:** - Negative News + Low RSI = "Falling Knife" (DO NOT BUY).
+       - Positive News + Low RSI = "Golden Dip" (BUY).
+    3. **Guardrails:** NEVER buy on hack/regulatory news.
+
+    ### OUTPUT FORMAT (Strict JSON Only):
+    {
+      "thought_process": "Brief analysis...",
+      "risk_factor": "LOW", "MEDIUM", or "HIGH",
+      "decision": "BUY", "SELL", or "HOLD",
+      "confidence": 0-100
+    }
+`;
+
+        try {
+            const response = await ollamaClient.chat({
+                model: 'llama3.2', 
+                messages: [{ role: 'user', content: prompt }],
+            });
+
+            const data = JSON.parse(cleanJson(response.message.content));
+
+            console.log(`   🤖 Logic: ${data.thought_process}`);
+            console.log(`   💡 Verdict: [${data.decision}] (Conf: ${data.confidence}%)`);
+
+            if (data.decision === "BUY" && data.confidence > 70 && data.risk_factor !== "HIGH") {
+                await executeTrade();
+            } else if (data.risk_factor === "HIGH") {
+                console.log("   ⚠️ High Risk detected. Holding.");
+            } else {
+                console.log("   ⏳ Conditions not met. Holding.");
+            }
+
+        } catch (error) {
+            console.error("   ❌ Cycle Error:", error);
+        }
+
+        // Heartbeat every 60 seconds
+        await new Promise(resolve => setTimeout(resolve, 60000));
     }
 }
 

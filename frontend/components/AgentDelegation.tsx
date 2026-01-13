@@ -15,10 +15,16 @@ export default function AgentDelegation() {
 
   const handleDelegate = () => {
     // 1. Prepare the Payload: "I want to call setPermissions"
+    // const permissionData = encodeFunctionData({
+    //   abi: AGENT_ACCOUNT_ABI,
+    //   functionName: 'setPermissions',
+    //   args: [[PHALA_WORKER_ADDRESS], [true]] // Arrays for [Signer] and [Permission]
+    // });
+
     const permissionData = encodeFunctionData({
       abi: AGENT_ACCOUNT_ABI,
-      functionName: 'setPermissions',
-      args: [[PHALA_WORKER_ADDRESS], [true]] // Arrays for [Signer] and [Permission]
+      functionName: 'setAuthorization', // <--- UPDATED NAME
+      args: [PHALA_WORKER_ADDRESS, true] // <--- UPDATED ARGS (No Arrays)
     });
 
     // 2. Execute via the Agent: "Agent, please run this payload on yourself"

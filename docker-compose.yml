@@ -1,40 +1,135 @@
+# # version: '3.8'
+
+# # services:
+# #   # Service 1: The Brain 🧠 (Unchanged)
+# #   ollama:
+# #     image: ollama/ollama:latest
+# #     container_name: agent_brain
+# #     volumes:
+# #       - ollama_data:/root/.ollama
+# #     ports:
+# #       - "11434:11434"
+# #     networks:
+# #       - agent_network
+# #     tty: true 
+# #     restart: always
+
+# #   # Service 2: The Agent 🕵️‍♂️ (Updated Paths)
+# #   agent:
+# #     # 1. Point to the subdirectory where Dockerfile & package.json live
+# #     build: ./phala-agents
+    
+# #     container_name: agent_body
+# #     depends_on:
+# #       - ollama
+    
+# #     # 2. Explicitly point to the .env file in the subdirectory
+# #     env_file:
+# #       - ./phala-agents/.env 
+      
+# #     environment:
+# #       - OLLAMA_URL=http://ollama:11434/api/generate
+# #     networks:
+# #       - agent_network
+# #     command: ["sh", "-c", "npx tsx src/ai_agent_foss.ts"]
+
+# # volumes:
+# #   ollama_data:
+
+# # networks:
+# #   agent_network:
+
+
+# version: '3.8'
+
+# services:
+#   # Service 1: The Brain (Ollama LLM)
+#   agent_brain:
+#     image: ollama/ollama:latest
+#     container_name: agent_brain
+#     restart: always
+#     volumes:
+#       - ollama_data:/root/.ollama
+#     ports:
+#       - "11434:11434"
+#     # Enable GPU support (Comment out this 'deploy' block if using CPU only)
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: 1
+#               capabilities: [gpu]
+
+#   # Service 2: The Body (Your TS Code)
+#   agent_body:
+#     build: .
+#     container_name: agent_body
+#     restart: always
+#     depends_on:
+#       - agent_brain
+#     environment:
+#       # Connects to the brain via internal docker network
+#       - OLLAMA_HOST=http://agent_brain:11434
+#       # Pass your keys (or use a .env file)
+#       - OPERATOR_PRIVATE_KEY=${OPERATOR_PRIVATE_KEY}
+#       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+#     volumes:
+#       # Sync logs if needed
+#       - ./logs:/app/logs
+
+# volumes:
+#   ollama_data:
+
+
+
 version: '3.8'
 
 services:
-  # Service 1: The Brain 🧠 (Unchanged)
-  ollama:
+  # Service 1: The Brain (Ollama LLM)
+  agent_brain:
     image: ollama/ollama:latest
     container_name: agent_brain
+    restart: always
     volumes:
       - ollama_data:/root/.ollama
     ports:
       - "11434:11434"
-    networks:
-      - agent_network
-    tty: true 
-    restart: always
+    # GPU Support (Keep this if you have an NVIDIA GPU, otherwise comment out)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
-  # Service 2: The Agent 🕵️‍♂️ (Updated Paths)
-  agent:
-    # 1. Point to the subdirectory where Dockerfile & package.json live
-    build: ./phala-agents
+  # Service 2: The Body (Your TS Code)
+  agent_body:
+    # ✅ FIX 1: Point to the subdirectory where Dockerfile lives
+    build: 
+      context: ./phala-agents
+      dockerfile: Dockerfile
     
     container_name: agent_body
+    restart: always
     depends_on:
-      - ollama
+      - agent_brain
     
-    # 2. Explicitly point to the .env file in the subdirectory
+    # ✅ FIX 2: Load variables from the .env inside the subfolder
     env_file:
-      - ./phala-agents/.env 
+      - ./phala-agents/.env
       
     environment:
-      - OLLAMA_URL=http://ollama:11434/api/generate
-    networks:
-      - agent_network
-    command: ["sh", "-c", "npx tsx src/ai_agent_foss.ts"]
+      - OLLAMA_HOST=http://agent_brain:11434
+      # We don't need to hardcode keys here if we use 'env_file' above,
+      # but keeping them as mapped variables is also fine.
+      - OPERATOR_PRIVATE_KEY=${OPERATOR_PRIVATE_KEY}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      
+    volumes:
+      # Store logs in the subfolder so you can see them easily
+      - ./phala-agents/logs:/app/logs
 
 volumes:
   ollama_data:
-
-networks:
-  agent_network:
